@@ -83,6 +83,7 @@ jobs:
         env:
           HUSKY: 0
           BUN_AUTH_TOKEN: ${{ secrets.BUN_AUTH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.BUN_AUTH_TOKEN }}
 
       - name: Build
         if: ${{ inputs.build-command != '' }}
