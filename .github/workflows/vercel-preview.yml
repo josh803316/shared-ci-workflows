@@ -1,0 +1,134 @@
+##
+## Reusable workflow: deploy a preview to Vercel on every pull request.
+##
+## Usage from a consuming repo (.github/workflows/preview.yml):
+##
+##   jobs:
+##     preview:
+##       uses: josh803316/shared-ci-workflows/.github/workflows/vercel-preview.yml@main
+##       with:
+##         app-name: my-app          # optional label for PR comments
+##         vercel-project-id: prj_xxxxx
+##         vercel-org-id: team_xxxxx
+##       secrets:
+##         vercel-token: ${{ secrets.VERCEL_TOKEN }}
+##
+
+name: Vercel Preview Deployment
+
+on:
+  workflow_call:
+    inputs:
+      app-name:
+        description: "Human-readable app name used in PR comments"
+        type: string
+        required: false
+        default: "App"
+      vercel-project-id:
+        description: "Vercel project ID (prj_xxx)"
+        type: string
+        required: true
+      vercel-org-id:
+        description: "Vercel org/team ID (team_xxx)"
+        type: string
+        required: true
+      node-version:
+        description: "Node.js version for the build step"
+        type: string
+        required: false
+        default: "20"
+      install-command:
+        description: "Command to install dependencies"
+        type: string
+        required: false
+        default: "bun install --frozen-lockfile"
+      build-command:
+        description: "Command to build the project"
+        type: string
+        required: false
+        default: "bun run build"
+    secrets:
+      vercel-token:
+        description: "Vercel personal access token"
+        required: true
+    outputs:
+      deployment-url:
+        description: "The preview deployment URL"
+        value: ${{ jobs.deploy-preview.outputs.deployment-url }}
+
+jobs:
+  deploy-preview:
+    name: Deploy Preview
+    runs-on: ubuntu-latest
+    outputs:
+      deployment-url: ${{ steps.deploy.outputs.deployment-url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: ${{ inputs.install-command }}
+
+      - name: Build
+        run: ${{ inputs.build-command }}
+
+      - name: Pull Vercel environment (preview)
+        run: bunx vercel pull --yes --environment=preview --token=${{ secrets.vercel-token }}
+        env:
+          VERCEL_ORG_ID: ${{ inputs.vercel-org-id }}
+          VERCEL_PROJECT_ID: ${{ inputs.vercel-project-id }}
+
+      - name: Build Vercel output
+        run: bunx vercel build --token=${{ secrets.vercel-token }}
+        env:
+          VERCEL_ORG_ID: ${{ inputs.vercel-org-id }}
+          VERCEL_PROJECT_ID: ${{ inputs.vercel-project-id }}
+
+      - name: Deploy to Vercel (preview)
+        id: deploy
+        run: |
+          DEPLOYMENT_URL=$(bunx vercel deploy --prebuilt --token=${{ secrets.vercel-token }})
+          echo "deployment-url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+          echo "Preview URL: $DEPLOYMENT_URL"
+        env:
+          VERCEL_ORG_ID: ${{ inputs.vercel-org-id }}
+          VERCEL_PROJECT_ID: ${{ inputs.vercel-project-id }}
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const url = '${{ steps.deploy.outputs.deployment-url }}';
+            const appName = '${{ inputs.app-name }}';
+            const body = `### 🚀 ${appName} Preview Deployment\n\n**URL:** ${url}\n\n_Deployed from commit \`${{ github.sha }}\`_`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existing = comments.find(c => c.body?.includes(`${appName} Preview Deployment`));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }

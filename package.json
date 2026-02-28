@@ -1,0 +1,39 @@
+{
+  "name": "@josh803316/shared-ci-workflows",
+  "version": "1.0.0",
+  "description": "Reusable CI workflows and tooling for @josh803316 projects",
+  "type": "module",
+  "bin": {
+    "env-config": "bin/env-config.ts",
+    "workflow-vercel": "bin/workflow-vercel.ts"
+  },
+  "scripts": {
+    "prepare": "husky",
+    "fmt": "prettier -wu",
+    "compile": "tsc",
+    "lint": "eslint",
+    "lint:nibble": "eslint-nibble",
+    "lint:inspect": "eslint-config-inspector",
+    "env-config": "bun bin/env-config.ts"
+  },
+  "dependencies": {
+    "@actions/core": "^1.11.1",
+    "commander": "^13.1.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@josh803316/shared-config": "^1.0.0"
+  },
+  "trustedDependencies": [
+    "@josh803316/shared-config",
+    "esbuild",
+    "sharp"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/josh803316/shared-ci-workflows.git"
+  },
+  "engines": {
+    "npm": "****** PLEASE USE 'bun install', NPM IS NOT SUPPORTED ******"
+  }
+}

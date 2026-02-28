@@ -1,0 +1,99 @@
+##
+## Reusable workflow: cut a semantic-release for any @josh803316 shared library.
+##
+## Usage from a consuming repo (.github/workflows/release.yml):
+##
+##   jobs:
+##     release:
+##       uses: josh803316/shared-ci-workflows/.github/workflows/semantic-release-shared-libs.yml@main
+##       with:
+##         repository: my-repo-name
+##         publish: 'true'
+##       secrets: inherit
+##
+
+name: Semantic Release — Shared Libs
+
+on:
+  workflow_call:
+    inputs:
+      repository:
+        description: "Repository / package name used as SEMANTIC_RELEASE_PACKAGE"
+        type: string
+        required: true
+      publish:
+        description: "Set to 'true' to publish the package to GitHub Packages"
+        type: string
+        required: true
+        default: 'false'
+      build-command:
+        description: "Optional build command to run before releasing (e.g. 'bun run build')"
+        type: string
+        required: false
+        default: ''
+      node-version:
+        description: "Node.js version (semantic-release requires Node, not just Bun)"
+        type: string
+        required: false
+        default: '22'
+    secrets:
+      BUN_AUTH_TOKEN:
+        description: "PAT with contents:write and packages:write — set this secret in each repo"
+        required: true
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write     # create tags and GitHub releases
+      packages: write     # publish to GitHub Packages
+      issues: write       # comment on issues when released
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history needed for semantic-release
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # semantic-release internally checks process.version and requires Node ≥ 22.14
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          registry-url: 'https://npm.pkg.github.com/'
+          scope: '@josh803316'
+
+      - name: Configure .npmrc for GitHub Packages
+        run: |
+          echo "@josh803316:registry=https://npm.pkg.github.com" >> ~/.npmrc
+          echo "//npm.pkg.github.com/:_authToken=${BUN_AUTH_TOKEN}" >> ~/.npmrc
+        env:
+          BUN_AUTH_TOKEN: ${{ secrets.BUN_AUTH_TOKEN }}
+
+      - name: Install dependencies
+        run: bun install
+        env:
+          HUSKY: 0
+          BUN_AUTH_TOKEN: ${{ secrets.BUN_AUTH_TOKEN }}
+
+      - name: Build
+        if: ${{ inputs.build-command != '' }}
+        run: ${{ inputs.build-command }}
+
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.BUN_AUTH_TOKEN }}
+          NPM_TOKEN: ${{ secrets.BUN_AUTH_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.BUN_AUTH_TOKEN }}
+          BUN_AUTH_TOKEN: ${{ secrets.BUN_AUTH_TOKEN }}
+          SEMANTIC_RELEASE_PACKAGE: ${{ inputs.repository }}
+          PUBLISH_TO_NPM: ${{ inputs.publish }}
+        run: npx -p @josh803316/semantic-release-helper semantic-release
