@@ -5,6 +5,11 @@
 ##
 ##   jobs:
 ##     release:
+##       permissions:
+##         contents: write
+##         issues: write
+##         packages: write
+##         pull-requests: write
 ##       uses: josh803316/shared-ci-workflows/.github/workflows/semantic-release-shared-libs.yml@main
 ##       with:
 ##         repository: my-repo-name
