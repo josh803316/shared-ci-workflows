@@ -1,20 +1,23 @@
 ##
 ## Reusable workflow: promote to Vercel production on merge to main.
 ##
-## Usage from a consuming repo (.github/workflows/production.yml):
+## Usage from a consuming repo (.github/workflows/release.yml):
 ##
 ##   on:
 ##     push:
 ##       branches: [main]
 ##
 ##   jobs:
-##     production:
+##     deploy:
 ##       uses: josh803316/shared-ci-workflows/.github/workflows/vercel-production.yml@main
 ##       with:
-##         vercel-project-id: prj_xxxxx
-##         vercel-org-id: team_xxxxx
-##       secrets:
-##         vercel-token: ${{ secrets.VERCEL_TOKEN }}
+##         vercel-project-id: ${{ vars.VERCEL_PROJECT_ID }}
+##         vercel-org-id: ${{ vars.VERCEL_ORG_ID }}
+##       secrets: inherit
+##
+## Required secrets in the calling repo:
+##   VERCEL_TOKEN    - Vercel personal access token
+##   BUN_AUTH_TOKEN  - GitHub PAT with packages:read (used as GITHUB_TOKEN for bun install)
 ##
 
 name: Vercel Production Deployment
@@ -45,10 +48,6 @@ on:
         type: string
         required: false
         default: "bun run build"
-    secrets:
-      vercel-token:
-        description: "Vercel personal access token"
-        required: true
     outputs:
       deployment-url:
         description: "The production deployment URL"
@@ -72,18 +71,20 @@ jobs:
 
       - name: Install dependencies
         run: ${{ inputs.install-command }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.BUN_AUTH_TOKEN }}
 
       - name: Build
         run: ${{ inputs.build-command }}
 
       - name: Pull Vercel environment (production)
-        run: bunx vercel pull --yes --environment=production --token=${{ secrets.vercel-token }}
+        run: bunx vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ inputs.vercel-org-id }}
           VERCEL_PROJECT_ID: ${{ inputs.vercel-project-id }}
 
       - name: Build Vercel output
-        run: bunx vercel build --prod --token=${{ secrets.vercel-token }}
+        run: bunx vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ inputs.vercel-org-id }}
           VERCEL_PROJECT_ID: ${{ inputs.vercel-project-id }}
@@ -91,7 +92,7 @@ jobs:
       - name: Deploy to Vercel (production)
         id: deploy
         run: |
-          DEPLOYMENT_URL=$(bunx vercel deploy --prebuilt --prod --token=${{ secrets.vercel-token }})
+          DEPLOYMENT_URL=$(bunx vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
           echo "deployment-url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
           echo "Production URL: $DEPLOYMENT_URL"
         env:

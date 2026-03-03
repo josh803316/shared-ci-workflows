@@ -1,17 +1,20 @@
 ##
 ## Reusable workflow: deploy a preview to Vercel on every pull request.
 ##
-## Usage from a consuming repo (.github/workflows/preview.yml):
+## Usage from a consuming repo (.github/workflows/vercel-preview.yml):
 ##
 ##   jobs:
 ##     preview:
 ##       uses: josh803316/shared-ci-workflows/.github/workflows/vercel-preview.yml@main
 ##       with:
 ##         app-name: my-app          # optional label for PR comments
-##         vercel-project-id: prj_xxxxx
-##         vercel-org-id: team_xxxxx
-##       secrets:
-##         vercel-token: ${{ secrets.VERCEL_TOKEN }}
+##         vercel-project-id: ${{ vars.VERCEL_PROJECT_ID }}
+##         vercel-org-id: ${{ vars.VERCEL_ORG_ID }}
+##       secrets: inherit
+##
+## Required secrets in the calling repo:
+##   VERCEL_TOKEN    - Vercel personal access token
+##   BUN_AUTH_TOKEN  - GitHub PAT with packages:read (used as GITHUB_TOKEN for bun install)
 ##
 
 name: Vercel Preview Deployment
@@ -47,10 +50,6 @@ on:
         type: string
         required: false
         default: "bun run build"
-    secrets:
-      vercel-token:
-        description: "Vercel personal access token"
-        required: true
     outputs:
       deployment-url:
         description: "The preview deployment URL"
@@ -74,18 +73,20 @@ jobs:
 
       - name: Install dependencies
         run: ${{ inputs.install-command }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.BUN_AUTH_TOKEN }}
 
       - name: Build
         run: ${{ inputs.build-command }}
 
       - name: Pull Vercel environment (preview)
-        run: bunx vercel pull --yes --environment=preview --token=${{ secrets.vercel-token }}
+        run: bunx vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ inputs.vercel-org-id }}
           VERCEL_PROJECT_ID: ${{ inputs.vercel-project-id }}
 
       - name: Build Vercel output
-        run: bunx vercel build --token=${{ secrets.vercel-token }}
+        run: bunx vercel build --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ inputs.vercel-org-id }}
           VERCEL_PROJECT_ID: ${{ inputs.vercel-project-id }}
@@ -93,7 +94,7 @@ jobs:
       - name: Deploy to Vercel (preview)
         id: deploy
         run: |
-          DEPLOYMENT_URL=$(bunx vercel deploy --prebuilt --token=${{ secrets.vercel-token }})
+          DEPLOYMENT_URL=$(bunx vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
           echo "deployment-url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
           echo "Preview URL: $DEPLOYMENT_URL"
         env:
