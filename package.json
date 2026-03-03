@@ -5,7 +5,8 @@
   "type": "module",
   "bin": {
     "env-config": "bin/env-config.ts",
-    "workflow-vercel": "bin/workflow-vercel.ts"
+    "workflow-vercel": "bin/workflow-vercel.ts",
+    "workflow-linear": "bin/workflow-linear.ts"
   },
   "scripts": {
     "prepare": "husky",
