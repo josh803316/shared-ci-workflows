@@ -1,0 +1,118 @@
+##
+## Reusable workflow: update a Linear ticket when a PR is opened or a release is published.
+##
+## On PR open   → move ticket to "In Progress" and post the preview URL as a comment.
+## On PR merge  → move ticket to "Done" (call with event_type: PR_MERGED after release).
+##
+## Usage from a consuming repo:
+##
+##   # vercel-preview.yml — after the Vercel preview job:
+##   linear:
+##     needs: preview
+##     if: always() && needs.preview.result == 'success'
+##     uses: josh803316/shared-ci-workflows/.github/workflows/linear-pr-handler.yml@main
+##     with:
+##       event_type: PR_OPENED
+##       pr_title: ${{ github.event.pull_request.title }}
+##       branch_name: ${{ github.head_ref }}
+##       preview_url: ${{ needs.preview.outputs.deployment-url }}
+##       ticket_prefix: ELY
+##     secrets: inherit
+##
+##   # release.yml — after semantic-release succeeds:
+##   - name: Mark Linear tickets Done
+##     uses: josh803316/shared-ci-workflows/.github/workflows/linear-pr-handler.yml@main
+##     with:
+##       event_type: PR_MERGED
+##       commit_messages: <git log output>
+##       ticket_prefix: ELY
+##     secrets: inherit
+##
+## Required secrets:
+##   LINEAR_API_KEY   — Linear personal API key
+##   BUN_AUTH_TOKEN   — GitHub PAT with packages:read for installing @josh803316 packages
+##
+
+name: Linear Ticket Handler
+
+on:
+  workflow_call:
+    inputs:
+      event_type:
+        description: >
+          GitHub event type controlling which Linear state to target.
+          One of: PR_OPENED | PR_DRAFT | PR_READY | PR_REVIEW_SUBMITTED | PR_MERGED | PUSH
+        type: string
+        required: true
+      pr_title:
+        description: 'PR title — searched for ELY-N refs'
+        type: string
+        required: false
+        default: ''
+      branch_name:
+        description: 'Branch name — searched first for ELY-N refs'
+        type: string
+        required: false
+        default: ''
+      commit_messages:
+        description: 'Comma or newline-separated commit subject lines — all refs extracted for PR_MERGED'
+        type: string
+        required: false
+        default: ''
+      preview_url:
+        description: 'Vercel preview URL — posted as a comment when ticket moves to In Progress'
+        type: string
+        required: false
+        default: ''
+      review_state:
+        description: 'Review state for PR_REVIEW_SUBMITTED: approved | changes_requested'
+        type: string
+        required: false
+        default: ''
+      ticket_prefix:
+        description: 'Linear team prefix (e.g. ELY). Overrides the LINEAR_ISSUE_PREFIX env var.'
+        type: string
+        required: false
+        default: 'ELY'
+    secrets:
+      LINEAR_API_KEY:
+        required: false   # optional — repos without Linear integration skip gracefully
+      BUN_AUTH_TOKEN:
+        required: false
+
+jobs:
+  update-linear:
+    name: Update Linear ticket
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Configure GitHub Packages registry
+        run: |
+          echo "@josh803316:registry=https://npm.pkg.github.com" >> ~/.npmrc
+          echo "//npm.pkg.github.com/:_authToken=${BUN_AUTH_TOKEN}" >> ~/.npmrc
+        env:
+          # Fall back to GITHUB_TOKEN (automatic) if BUN_AUTH_TOKEN is not provided
+          BUN_AUTH_TOKEN: ${{ secrets.BUN_AUTH_TOKEN || github.token }}
+
+      - name: Install @josh803316/shared-ci-workflows
+        run: bun add @josh803316/shared-ci-workflows
+        env:
+          GITHUB_TOKEN: ${{ secrets.BUN_AUTH_TOKEN || github.token }}
+
+      - name: Transition Linear ticket
+        run: |
+          bunx workflow-linear transition \
+            --event-type "${{ inputs.event_type }}" \
+            --pr-title "${{ inputs.pr_title }}" \
+            --branch-name "${{ inputs.branch_name }}" \
+            --commit-messages "${{ inputs.commit_messages }}" \
+            --preview-url "${{ inputs.preview_url }}" \
+            ${{ inputs.review_state != '' && format('--review-state "{0}"', inputs.review_state) || '' }}
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          LINEAR_ISSUE_PREFIX: ${{ inputs.ticket_prefix }}

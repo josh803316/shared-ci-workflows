@@ -1,12 +1,19 @@
 /**
  * Linear integration utilities for GitHub Actions workflows.
  *
- * Extracts Linear issue IDs (e.g. ELY-123) from branch names, PR titles,
+ * Extracts Linear issue IDs (e.g. ELY-123, PRO-42) from branch names, PR titles,
  * and commit messages, then transitions issue states via the Linear GraphQL API.
+ *
+ * Configure via environment variables:
+ *   LINEAR_ISSUE_PREFIX  — team key prefix (e.g. "ELY" or "PRO") — required
+ *   LINEAR_API_KEY       — Linear personal API key — required for API calls
  */
 
 const LINEAR_API_URL = 'https://api.linear.app/graphql';
-const ISSUE_PREFIX = process.env.LINEAR_ISSUE_PREFIX || 'ELY';
+
+// Resolved at runtime so each project can set its own prefix via LINEAR_ISSUE_PREFIX.
+// If unset, extraction functions return no matches (graceful no-op).
+const ISSUE_PREFIX = process.env.LINEAR_ISSUE_PREFIX ?? '';
 
 // Linear workflow states — these are the display names in Linear.
 // The actual IDs are fetched dynamically since they vary per team.
@@ -29,30 +36,43 @@ export enum GitHubEventType {
 // Issue ID extraction
 // ---------------------------------------------------------------------------
 
+/**
+ * Build a regex for the configured prefix.
+ * Returns null when LINEAR_ISSUE_PREFIX is not set — callers should return early.
+ */
+function makePattern(flags = 'i'): RegExp | null {
+  if (!ISSUE_PREFIX) return null;
+  return new RegExp(`\\[?(${ISSUE_PREFIX}-\\d+)\\]?`, flags);
+}
+
 /** Extract the first Linear issue identifier (e.g. ELY-123) from a branch name */
 export function extractIssueIdFromBranch(branchName: string): string | null {
-  const pattern = new RegExp(`(${ISSUE_PREFIX}-\\d+)`, 'i');
+  const pattern = makePattern();
+  if (!pattern) return null;
   const match = branchName.match(pattern);
   return match ? match[1]!.toUpperCase() : null;
 }
 
 /** Extract the first Linear issue identifier from a PR title */
 export function extractIssueIdFromTitle(title: string): string | null {
-  const pattern = new RegExp(`\\[?(${ISSUE_PREFIX}-\\d+)\\]?`, 'i');
+  const pattern = makePattern();
+  if (!pattern) return null;
   const match = title.match(pattern);
   return match ? match[1]!.toUpperCase() : null;
 }
 
 /** Extract the first Linear issue identifier from a commit message */
 export function extractIssueIdFromCommit(message: string): string | null {
-  const pattern = new RegExp(`\\[?(${ISSUE_PREFIX}-\\d+)\\]?`, 'i');
+  const pattern = makePattern();
+  if (!pattern) return null;
   const match = message.match(pattern);
   return match ? match[1]!.toUpperCase() : null;
 }
 
 /** Extract ALL unique Linear issue identifiers from a string */
 export function extractAllIssueIdsFromText(text: string): string[] {
-  const pattern = new RegExp(`\\[?(${ISSUE_PREFIX}-\\d+)\\]?`, 'gi');
+  const pattern = makePattern('gi');
+  if (!pattern) return [];
   const matches = [...text.matchAll(pattern)];
   return [...new Set(matches.map((m) => m[1]!.toUpperCase()))];
 }
