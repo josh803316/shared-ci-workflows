@@ -91,10 +91,17 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Configure GitHub Packages registry
+      - name: Configure GitHub Packages for Bun
         run: |
+          # Standard npm config (for any Node-based tooling that might run)
           echo "@josh803316:registry=https://npm.pkg.github.com" >> ~/.npmrc
           echo "//npm.pkg.github.com/:_authToken=${BUN_AUTH_TOKEN}" >> ~/.npmrc
+
+          # Bun-specific scoped registry config so bun add uses GitHub Packages
+          cat <<'EOF' > bunfig.toml
+          [install.scopes]
+          "@josh803316" = { url = "https://npm.pkg.github.com", token = "$BUN_AUTH_TOKEN" }
+          EOF
         env:
           # Fall back to GITHUB_TOKEN (automatic) if BUN_AUTH_TOKEN is not provided
           BUN_AUTH_TOKEN: ${{ secrets.BUN_AUTH_TOKEN || github.token }}
@@ -102,7 +109,8 @@ jobs:
       - name: Install @josh803316/shared-ci-workflows
         run: bun add @josh803316/shared-ci-workflows
         env:
-          GITHUB_TOKEN: ${{ secrets.BUN_AUTH_TOKEN || github.token }}
+          # Bun reads BUN_AUTH_TOKEN via bunfig.toml to authenticate to GitHub Packages
+          BUN_AUTH_TOKEN: ${{ secrets.BUN_AUTH_TOKEN || github.token }}
 
       - name: Transition Linear ticket
         run: |
@@ -116,3 +124,4 @@ jobs:
         env:
           LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
           LINEAR_ISSUE_PREFIX: ${{ inputs.ticket_prefix }}
+          BUN_AUTH_TOKEN: ${{ secrets.BUN_AUTH_TOKEN || github.token }}
