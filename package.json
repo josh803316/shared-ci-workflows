@@ -18,12 +18,12 @@
     "env-config": "bun bin/env-config.ts"
   },
   "dependencies": {
-    "@actions/core": "^1.11.1",
-    "commander": "^13.1.0",
-    "dotenv": "^16.4.5"
+    "@actions/core": "^3.0.0",
+    "commander": "^14.0.3",
+    "dotenv": "^17.3.1"
   },
   "devDependencies": {
-    "@josh803316/shared-config": "^1.0.0"
+    "@josh803316/shared-config": "^2.0.0"
   },
   "trustedDependencies": [
     "@josh803316/shared-config",
