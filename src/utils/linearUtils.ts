@@ -41,14 +41,14 @@ export enum GitHubEventType {
  * Returns null when LINEAR_ISSUE_PREFIX is not set — callers should return early.
  */
 function makePattern(flags = 'i'): RegExp | null {
-  if (!ISSUE_PREFIX) return null;
+  if (!ISSUE_PREFIX) {return null;}
   return new RegExp(`\\[?(${ISSUE_PREFIX}-\\d+)\\]?`, flags);
 }
 
 /** Extract the first Linear issue identifier (e.g. ELY-123) from a branch name */
 export function extractIssueIdFromBranch(branchName: string): string | null {
   const pattern = makePattern();
-  if (!pattern) return null;
+  if (!pattern) {return null;}
   const match = branchName.match(pattern);
   return match ? match[1]!.toUpperCase() : null;
 }
@@ -56,7 +56,7 @@ export function extractIssueIdFromBranch(branchName: string): string | null {
 /** Extract the first Linear issue identifier from a PR title */
 export function extractIssueIdFromTitle(title: string): string | null {
   const pattern = makePattern();
-  if (!pattern) return null;
+  if (!pattern) {return null;}
   const match = title.match(pattern);
   return match ? match[1]!.toUpperCase() : null;
 }
@@ -64,7 +64,7 @@ export function extractIssueIdFromTitle(title: string): string | null {
 /** Extract the first Linear issue identifier from a commit message */
 export function extractIssueIdFromCommit(message: string): string | null {
   const pattern = makePattern();
-  if (!pattern) return null;
+  if (!pattern) {return null;}
   const match = message.match(pattern);
   return match ? match[1]!.toUpperCase() : null;
 }
@@ -72,7 +72,7 @@ export function extractIssueIdFromCommit(message: string): string | null {
 /** Extract ALL unique Linear issue identifiers from a string */
 export function extractAllIssueIdsFromText(text: string): string[] {
   const pattern = makePattern('gi');
-  if (!pattern) return [];
+  if (!pattern) {return [];}
   const matches = [...text.matchAll(pattern)];
   return [...new Set(matches.map((m) => m[1]!.toUpperCase()))];
 }
@@ -88,15 +88,15 @@ export function extractIssueId(opts: {
 }): string | null {
   if (opts.branchName) {
     const id = extractIssueIdFromBranch(opts.branchName);
-    if (id) return id;
+    if (id) {return id;}
   }
   if (opts.prTitle) {
     const id = extractIssueIdFromTitle(opts.prTitle);
-    if (id) return id;
+    if (id) {return id;}
   }
   for (const msg of opts.commitMessages ?? []) {
     const id = extractIssueIdFromCommit(msg);
-    if (id) return id;
+    if (id) {return id;}
   }
   return null;
 }
@@ -278,8 +278,8 @@ export function mapEventToState(eventType: GitHubEventType, reviewState?: string
       return LinearState.IN_REVIEW;
 
     case GitHubEventType.PR_REVIEW_SUBMITTED:
-      if (reviewState === 'changes_requested') return LinearState.IN_PROGRESS;
-      if (reviewState === 'approved') return LinearState.IN_REVIEW; // stays in review until merged
+      if (reviewState === 'changes_requested') {return LinearState.IN_PROGRESS;}
+      if (reviewState === 'approved') {return LinearState.IN_REVIEW;} // stays in review until merged
       return null;
 
     case GitHubEventType.PR_MERGED:

@@ -91,7 +91,7 @@ program
 
       if (opts.linearKey) {
         issueIds = [opts.linearKey.toUpperCase()];
-      } else if (eventType === 'PR_MERGED' || eventType === 'PUSH') {
+      } else if (String(eventType) === 'PR_MERGED' || String(eventType) === 'PUSH') {
         issueIds = extractAllIssueIds({
           branchName: opts.branchName,
           prTitle: opts.prTitle,
@@ -124,7 +124,7 @@ program
         }
 
         // After moving to In Progress, post the preview URL as a comment if provided
-        if (opts.previewUrl && targetState === 'In Progress') {
+        if (opts.previewUrl && String(targetState) === 'In Progress') {
           await addComment(
             apiKey,
             id,
