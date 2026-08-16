@@ -59,7 +59,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0   # full history needed for semantic-release
 
@@ -70,7 +70,7 @@ jobs:
 
       # semantic-release internally checks process.version and requires Node ≥ 22.14
       - name: Setup Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v7.0.0
         with:
           node-version: ${{ inputs.node-version }}
           registry-url: 'https://npm.pkg.github.com/'
