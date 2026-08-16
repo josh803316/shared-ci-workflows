@@ -5,15 +5,15 @@
     "": {
       "name": "@josh803316/shared-ci-workflows",
       "dependencies": {
-        "@actions/core": "latest",
-        "commander": "latest",
-        "dotenv": "latest",
+        "@actions/core": "^3.0.1",
+        "commander": "^15.0.0",
+        "dotenv": "^17.4.2",
       },
       "devDependencies": {
-        "@biomejs/biome": "latest",
-        "@josh803316/shared-config": "latest",
-        "@types/node": "latest",
-        "typescript": "latest",
+        "@biomejs/biome": "^2.5.8",
+        "@josh803316/shared-config": "^3.0.0",
+        "@types/node": "^26.2.0",
+        "typescript": "^7.0.2",
       },
     },
   },
