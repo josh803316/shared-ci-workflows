@@ -10,11 +10,10 @@
   },
   "scripts": {
     "prepare": "husky",
-    "fmt": "prettier -wu",
     "compile": "tsc",
-    "lint": "eslint",
-    "lint:nibble": "eslint-nibble",
-    "lint:inspect": "eslint-config-inspector",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome format --write .",
     "env-config": "bun bin/env-config.ts"
   },
   "dependencies": {
@@ -23,11 +22,13 @@
     "dotenv": "^17.4.2"
   },
   "devDependencies": {
-    "@josh803316/shared-config": "^2.0.0",
+    "@biomejs/biome": "^2.5.8",
+    "@josh803316/shared-config": "^3.0.0",
     "@types/node": "^26.2.0",
-    "typescript": "6.0.3"
+    "typescript": "^7.0.2"
   },
   "trustedDependencies": [
+    "@biomejs/biome",
     "@josh803316/shared-config",
     "esbuild",
     "sharp"
