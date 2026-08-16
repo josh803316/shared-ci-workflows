@@ -26,7 +26,7 @@ function run(cmd: string, args: string[], opts: {capture?: boolean} = {}): strin
     core.setFailed(msg);
     process.exit(result.status ?? 1);
   }
-  return ((result.stdout as string) ?? '').trim();
+  return ((result.stdout) ?? '').trim();
 }
 
 // ---------------------------------------------------------------------------

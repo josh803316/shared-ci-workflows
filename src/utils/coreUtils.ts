@@ -14,7 +14,7 @@ export async function getPackageName(): Promise<string> {
   if (!pkg.name) {
     throw new Error('package.json has no "name" field');
   }
-  return pkg.name;
+  return await Promise.resolve(pkg.name);
 }
 
 /** Get current git branch name */
