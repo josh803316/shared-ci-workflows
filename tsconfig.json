@@ -1,5 +1,5 @@
 {
-  "extends": "@josh803316/shared-config/tsconfig.json",
+  "extends": "@josh803316/shared-config/tsconfig/bun.json",
   "exclude": ["dist/", "node_modules/"],
   "compilerOptions": {
     "lib": ["ESNext", "DOM"],
