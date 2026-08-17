@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.8",
-    "@josh803316/shared-config": "3.0.1",
+    "@josh803316/shared-config": "3.0.2",
     "@types/node": "^26.2.0",
     "typescript": "^7.0.2"
   },
